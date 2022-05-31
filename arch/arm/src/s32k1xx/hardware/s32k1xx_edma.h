@@ -837,8 +837,8 @@
  * Public Types
  ****************************************************************************/
 
-/* In-memory representation of the 32-byte Transfer Control Descriptor
- * (TCD)
+/* Hardware representation of the 32-byte Transfer
+ * Control Descriptor (TCD)
  */
 
 struct s32k1xx_edmatcd_s
