@@ -85,8 +85,12 @@ int nxsem_trywait(FAR sem_t *sem)
 
   /* This API should not be called from interrupt handlers */
 
-  DEBUGASSERT(sem != NULL && up_interrupt_context() == false);
+  DEBUGASSERT(sem != NULL);
+  
+  /* DEBUGASSERT(sem != NULL && up_interrupt_context() == false); */
 
+  /* To be discussed this call is non-blocking thus can be called from a ISR */
+ 
   if (sem != NULL)
     {
       /* The following operations must be performed with interrupts disabled

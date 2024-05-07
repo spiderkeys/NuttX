@@ -1313,6 +1313,14 @@ config ARCH_BOARD_S32K144EVB
 		This options selects support for NuttX on the NXP S32K144EVB board
 		featuring the S32K144 Cortex-M4F.
 
+config ARCH_BOARD_RDDRONE_BMS772
+	bool "NXP RDDRONE-BMS772"
+	depends on ARCH_CHIP_S32K144
+	select ARCH_HAVE_LEDS
+	---help---
+		This options selects support for NuttX on the NXP RDDRONE-BMS772 board
+		featuring the S32K144 Cortex-M4F.
+
 config ARCH_BOARD_RDDRONE_UAVCAN144
 	bool "NXP RDDRONE-UAVCAN144"
 	depends on ARCH_CHIP_S32K144
@@ -2276,6 +2284,7 @@ config ARCH_BOARD
 	default "rddrone-uavcan146"        if ARCH_BOARD_RDDRONE_UAVCAN146
 	default "s32k146evb"               if ARCH_BOARD_S32K146EVB
 	default "s32k148evb"               if ARCH_BOARD_S32K148EVB
+	default "rddrone-bms772"           if ARCH_BOARD_RDDRONE_BMS772
 	default "sabre-6quad"              if ARCH_BOARD_SABRE_6QUAD
 	default "sama5d2-xult"             if ARCH_BOARD_SAMA5D2_XULT
 	default "giant-board"              if ARCH_BOARD_GIANT_BOARD
@@ -2415,6 +2424,9 @@ source "boards/arm/s32k1xx/s32k118evb/Kconfig"
 endif
 if ARCH_BOARD_S32K144EVB
 source "boards/arm/s32k1xx/s32k144evb/Kconfig"
+endif
+if ARCH_BOARD_RDDRONE_BMS772
+source "boards/arm/s32k1xx/rddrone-bms772/Kconfig"
 endif
 if ARCH_BOARD_RDDRONE_UAVCAN144
 source "boards/arm/s32k1xx/rddrone-uavcan144/Kconfig"

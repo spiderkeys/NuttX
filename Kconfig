@@ -1764,6 +1764,7 @@ endmenu
 menu "RTOS Features"
 source sched/Kconfig
 source syscall/Kconfig
+source sched/systemview/Kconfig
 endmenu
 
 menu "Device Drivers"

@@ -1,0 +1,20 @@
+# sample rcS file; you must run tools/genromfs <nuttx dir> from within this
+# location to convert this file to nsh_romfsimg.h for inclusion in the build
+# echo "This is the startup script"
+# echo "Countdown"
+# sleep 1
+# echo "3"
+# sleep 1
+# echo "2"
+# sleep 1
+# echo "1"
+# sleep 1
+ echo "Starting BMS"
+ sleep 1
+"free"
+echo "Starting can0"
+"ifup" "can0"
+"bms"
+ sleep 1
+ echo "Started"
+ # sleep 1

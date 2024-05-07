@@ -76,7 +76,7 @@ int can_setsockopt(FAR struct socket *psock, int option,
   int ret = OK;
   int count = 0;
 
-  DEBUGASSERT(psock != NULL && value != NULL && psock->s_conn != NULL);
+  DEBUGASSERT(psock != NULL && (value_len == 0 || value != NULL) && psock->s_conn != NULL);
   conn = (FAR struct can_conn_s *)psock->s_conn;
 
   if (psock->s_type != SOCK_RAW)

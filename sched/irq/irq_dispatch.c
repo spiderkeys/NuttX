@@ -49,6 +49,9 @@
 #include "clock/clock.h"
 #include "sched/sched.h"
 
+
+#include "systemview/SEGGER_SYSVIEW_NuttX.h"
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -139,6 +142,9 @@ void irq_dispatch(int irq, FAR void *context)
   FAR void *arg = NULL;
   unsigned int ndx = irq;
 
+
+  TRACE_ISR_ENTER();
+
 #if NR_IRQS > 0
   if ((unsigned)irq < NR_IRQS)
     {
@@ -182,6 +188,13 @@ void irq_dispatch(int irq, FAR void *context)
 
   CALL_VECTOR(ndx, vector, irq, context, arg);
   UNUSED(ndx);
+
+  if (g_running_tasks[this_cpu()] != this_task()) {
+    TRACE_ISR_EXIT_TO_SCHEDULER();
+    TRACE_TASK_START(this_task()->pid);
+  } else {
+    TRACE_ISR_EXIT();
+  }
 
 #ifdef CONFIG_SCHED_INSTRUMENTATION_IRQHANDLER
   /* Notify that we are leaving from the interrupt handler */

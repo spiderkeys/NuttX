@@ -1,0 +1,189 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+if ARCH_BOARD_RDDRONE_BMS772
+
+menuconfig RESET_CAUSE_PROC_FS
+	bool "Enable reset cause as a proc fs"
+	default n
+	depends on FS_PROCFS
+	select FS_PROCFS_REGISTER
+	---help---
+		"Enable reset cause as a proc fs as /proc/resetcause to get the reset cause"
+
+menuconfig NRST_CHECK_PROC_FS
+	bool "Enable nrst check as a proc fs"
+	default y
+	depends on FS_PROCFS
+	select FS_PROCFS_REGISTER
+	---help---
+		"Enable nrst check as a proc fs as /proc/nrstcheck to check if the nrst connection is OK"
+
+menu "PM configuration"
+depends on PM
+	menu "PM configuration PM_STANDBY mode"
+		choice
+			prompt "MCU power mode"
+			default VLPR_STANDBY
+
+			config RUN_STANDBY
+				bool "RUN mode"
+				---help---
+					The MCU should be in RUN mode in the PM_STANDBY mode
+
+			config VLPR_STANDBY
+				bool "VLPR mode"
+				---help---
+					The MCU should be in VLPR (very low power run) mode in the PM_STANDBY mode
+
+		endchoice # MCU power mode
+
+		menuconfig PM_SPI_STANDBY
+			bool "enable SPI for PM_STANDBY mode"
+			default n
+			depends on SPI
+			---help---
+				Enable PM configuration for SPI 
+
+		if PM_SPI_STANDBY
+			menuconfig PM_SPI0_STANDBY
+				bool "Enable spi0 in PM_STANDBY"
+				default n
+				depends on S32K1XX_LPSPI0
+				---help---
+					Enable spi0 in power mode PM_STANDBY"
+					
+			menuconfig PM_SPI1_STANDBY
+				bool "Enable spi1 in PM_STANDBY"
+				default n
+				depends on S32K1XX_LPSPI1
+				---help---
+					Enable spi1 in power mode PM_STANDBY"
+		endif
+
+		menuconfig PM_SERIAL_STANDBY
+			bool "enable serial for PM_STANDBY mode"
+			default n
+			depends on SERIAL
+			---help---
+				Enable PM configuration for SERIAL 
+				
+		if PM_SERIAL_STANDBY
+			menuconfig PM_CONSOLE_STANDBY
+				bool "Enable the serial console in PM_STANDBY"
+				default n
+				depends on SERIAL_CONSOLE
+				select PM_SERIAL0_STANDBY if LPUART0_SERIAL_CONSOLE
+				select PM_SERIAL1_STANDBY if LPUART1_SERIAL_CONSOLE 
+				select PM_SERIAL2_STANDBY if LPUART2_SERIAL_CONSOLE 
+				---help---
+					Enable the console in power mode PM_STANDBY"
+
+			menuconfig PM_SERIAL0_STANDBY
+				bool "Enable SERIAL0 in PM_STANDBY"
+				default n
+				depends on S32K1XX_LPUART0
+				---help---
+					Enable SERIAL0 in power mode PM_STANDBY"
+
+			menuconfig PM_SERIAL1_STANDBY
+				bool "Enable SERIAL1 in PM_STANDBY"
+				default n
+				depends on S32K1XX_LPUART1
+				---help---
+					Enable SERIAL1 in power mode PM_STANDBY"
+
+			menuconfig PM_SERIAL2_STANDBY
+				bool "Enable SERIAL2 in PM_STANDBY"
+				default n
+				depends on S32K1XX_LPUART2
+				---help---
+					Enable SERIAL2 in power mode PM_STANDBY"
+		endif
+	endmenu
+
+	menu "PM configuration PM_SLEEP mode"
+		choice
+			prompt "MCU power mode"
+			default VLPR_SLEEP
+
+			config RUN_SLEEP
+				bool "RUN mode"
+				---help---
+					The MCU should be in RUN mode in the PM_SLEEP mode
+
+			config VLPR_SLEEP
+				bool "VLPR mode"
+				---help---
+					The MCU should be in VLPR (very low power run) mode in the PM_SLEEP mode
+
+		endchoice # MCU power mode
+
+		menuconfig PM_SPI_SLEEP
+			bool "enable SPI for PM_SLEEP mode"
+			default n
+			depends on SPI
+			---help---
+				Enable PM configuration for SPI 
+
+		if PM_SPI_SLEEP
+			menuconfig PM_SPI0_SLEEP
+				bool "Enable spi0 in PM_SLEEP"
+				default n
+				depends on S32K1XX_LPSPI0
+				---help---
+					Enable spi0 in power mode PM_SLEEP"
+			menuconfig PM_SPI1_SLEEP
+				bool "Enable spi1 in PM_SLEEP"
+				default n
+				depends on S32K1XX_LPSPI1
+				---help---
+					Enable spi1 in power mode PM_SLEEP"
+		endif
+
+		menuconfig PM_SERIAL_SLEEP
+			bool "enable serial for PM_SLEEP mode"
+			default n
+			depends on SERIAL
+			---help---
+				Enable PM configuration for SERIAL 
+				
+		if PM_SERIAL_SLEEP
+			menuconfig PM_CONSOLE_SLEEP
+				bool "Enable the serial console in PM_SLEEP"
+				default n
+				depends on SERIAL_CONSOLE
+				select PM_SERIAL0_SLEEP if LPUART0_SERIAL_CONSOLE
+				select PM_SERIAL1_SLEEP if LPUART1_SERIAL_CONSOLE 
+				select PM_SERIAL2_SLEEP if LPUART2_SERIAL_CONSOLE 
+				---help---
+					Enable the console in power mode PM_SLEEP"
+
+			menuconfig PM_SERIAL0_SLEEP
+				bool "Enable SERIAL0 in PM_SLEEP"
+				default n
+				depends on S32K1XX_LPUART0
+
+				---help---
+					Enable SERIAL0 in power mode PM_SLEEP"
+
+			menuconfig PM_SERIAL1_SLEEP
+				bool "Enable SERIAL1 in PM_SLEEP"
+				default n
+				depends on S32K1XX_LPUART1
+				---help---
+					Enable SERIAL1 in power mode PM_SLEEP"
+
+			menuconfig PM_SERIAL2_SLEEP
+				bool "Enable SERIAL2 in PM_SLEEP"
+				default n
+				depends on S32K1XX_LPUART2
+				---help---
+					Enable SERIAL2 in power mode PM_SLEEP"
+		endif
+	endmenu
+endmenu
+
+endif # ARCH_BOARD_RDDRONE_BMS772

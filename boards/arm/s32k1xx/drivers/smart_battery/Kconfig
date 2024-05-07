@@ -1,0 +1,12 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config SBS_DRIVER
+	bool "Simple SBS driver"
+	default n
+	depends on I2C_SLAVE
+	---help---
+		Simple smart battery driver, implementing a subset of the
+		Smart Battery System (SBS) 1.1 specification for SMBus.

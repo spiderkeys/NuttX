@@ -32,6 +32,7 @@ include pthread/Make.defs
 include sched/Make.defs
 include semaphore/Make.defs
 include signal/Make.defs
+include systemview/Make.defs
 include task/Make.defs
 include timer/Make.defs
 include wdog/Make.defs

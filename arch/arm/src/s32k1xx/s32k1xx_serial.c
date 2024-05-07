@@ -70,6 +70,8 @@
 #include "s32k1xx_pin.h"
 #include "s32k1xx_lowputc.h"
 
+#include "s32k1xx_periphclocks.h"
+
 #ifdef USE_SERIALDRIVER
 
 /****************************************************************************
@@ -145,9 +147,42 @@
 #endif
 
 #if defined(CONFIG_PM)
+#ifndef PM_IDLE_DOMAIN
 #  define PM_IDLE_DOMAIN      0 /* Revisit */
 #endif
+#endif
 
+#ifdef HAVE_LPUART_CONSOLE
+#  if defined(CONFIG_LPUART0_SERIAL_CONSOLE)
+#    define S32K1XX_CONSOLE_BASE     S32K1XX_LPUART0_BASE
+#    define S32K1XX_CONSOLE_BAUD     CONFIG_LPUART0_BAUD
+#    define S32K1XX_CONSOLE_BITS     CONFIG_LPUART0_BITS
+#    define S32K1XX_CONSOLE_PARITY   CONFIG_LPUART0_PARITY
+#    define S32K1XX_CONSOLE_2STOP    CONFIG_LPUART0_2STOP
+#  elif defined(CONFIG_LPUART1_SERIAL_CONSOLE)
+#    define S32K1XX_CONSOLE_BASE     S32K1XX_LPUART1_BASE
+#    define S32K1XX_CONSOLE_BAUD     CONFIG_LPUART1_BAUD
+#    define S32K1XX_CONSOLE_BITS     CONFIG_LPUART1_BITS
+#    define S32K1XX_CONSOLE_PARITY   CONFIG_LPUART1_PARITY
+#    define S32K1XX_CONSOLE_2STOP    CONFIG_LPUART1_2STOP
+#  elif defined(CONFIG_LPUART2_SERIAL_CONSOLE)
+#    define S32K1XX_CONSOLE_BASE     S32K1XX_LPUART2_BASE
+#    define S32K1XX_CONSOLE_BAUD     CONFIG_LPUART2_BAUD
+#    define S32K1XX_CONSOLE_BITS     CONFIG_LPUART2_BITS
+#    define S32K1XX_CONSOLE_PARITY   CONFIG_LPUART2_PARITY
+#    define S32K1XX_CONSOLE_2STOP    CONFIG_LPUART2_2STOP
+#  endif
+#endif
+
+#if defined(CONFIG_PM_SERIAL0_STANDBY) || defined(CONFIG_PM_SERIAL0_SLEEP)
+#   define CONFIG_PM_SERIAL0
+#endif
+#if defined(CONFIG_PM_SERIAL1_STANDBY) || defined(CONFIG_PM_SERIAL1_SLEEP)
+#   define CONFIG_PM_SERIAL1
+#endif
+#if defined(CONFIG_PM_SERIAL2_STANDBY) || defined(CONFIG_PM_SERIAL2_SLEEP)
+#   define CONFIG_PM_SERIAL2
+#endif
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -521,8 +556,10 @@ static int s32k1xx_setup(struct uart_dev_s *dev)
   config.invrts     = priv->inviflow;   /* Inversion of outbound flow control */
 #endif
 
+  // configure the LPUART
   ret = s32k1xx_lpuart_configure(priv->uartbase, &config);
 
+  // get the current interrupt bits and place them in ie (used to use the interrupts) 
   priv->ie = s32k1xx_serialin(priv, S32K1XX_LPUART_CTRL_OFFSET) & \
              LPUART_ALL_INTS;
   return ret;
@@ -548,8 +585,11 @@ static void s32k1xx_shutdown(struct uart_dev_s *dev)
   struct s32k1xx_uart_s *priv = (struct s32k1xx_uart_s *)dev->priv;
 
   /* Disable the UART */
-
+  // set the reset bit 
   s32k1xx_serialout(priv, S32K1XX_LPUART_GLOBAL_OFFSET, LPUART_GLOBAL_RST);
+
+  // clear the reset bit again
+  s32k1xx_serialout(priv, S32K1XX_LPUART_GLOBAL_OFFSET, 0);
 }
 
 /****************************************************************************
@@ -1127,38 +1167,172 @@ static bool s32k1xx_txempty(struct uart_dev_s *dev)
 static void up_pm_notify(struct pm_callback_s *cb, int domain,
                          enum pm_state_e pmstate)
 {
-  switch (pmstate)
+ unsigned int count = 0;   // the amount of peripheral clocks to change
+  peripheral_clock_source_t clockSource;
+
+  #ifdef CONFIG_PM_SERIAL0
+    struct s32k1xx_uart_s *priv0 = g_uart0port.priv;
+  #endif
+  #ifdef CONFIG_PM_SERIAL1
+    struct s32k1xx_uart_s *priv1 = g_uart1port.priv;
+  #endif
+  #ifdef CONFIG_PM_SERIAL2
+    struct s32k1xx_uart_s *priv2 = g_uart2port.priv;
+  #endif
+
+  uint32_t retReg = 0;
+  //#ifdef CONSOLE_DEV
+
+  // check if the transition is from the IDLE domain to the NORMAL domain
+  // or the mode is already done
+  if(((pm_querystate(PM_IDLE_DOMAIN) == PM_IDLE) && (pmstate == PM_NORMAL)) ||
+    (((pm_querystate(PM_IDLE_DOMAIN) == pmstate))))
+  {
+    // return
+    return;
+  }
+
+  // check which PM it is 
+  switch(pmstate)
+  {
+    //in case it needs to change to the RUN mode
+    case PM_NORMAL:
     {
-      case(PM_NORMAL):
-        {
-          /* Logic for PM_NORMAL goes here */
-        }
-        break;
+      /* Logic for PM_NORMAL goes here */
+      
+      // set the right clock source to go back to RUN mode
+      clockSource = CLK_SRC_SPLL_DIV2;
 
-      case(PM_IDLE):
-        {
-          /* Logic for PM_IDLE goes here */
-        }
-        break;
-
-      case(PM_STANDBY):
-        {
-          /* Logic for PM_STANDBY goes here */
-        }
-        break;
-
-      case(PM_SLEEP):
-        {
-          /* Logic for PM_SLEEP goes here */
-        }
-        break;
-
-      default:
-
-        /* Should not get here */
-
-        break;
+      count = 1;
     }
+    break;
+    default:
+    {
+      // don't do anything, just return OK
+      //return;
+    }
+    break;
+  }
+
+  // check if something needs to change
+  if(count)
+  {
+
+    #ifdef CONFIG_PM_SERIAL0
+
+      // make the peripheral clock config struct
+      const struct peripheral_clock_config_s clockConfig0 = 
+      {
+        .clkname  =   LPUART0_CLK,
+        .clkgate  =   true,
+        .clksrc   =   clockSource,
+        .frac     =   MULTIPLY_BY_ONE,
+        .divider  =   1,
+      };
+
+      // read the FIFO register
+      retReg = getreg32(priv0->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+      // make the value
+      retReg |= (LPUART_FIFO_RXFLUSH + LPUART_FIFO_TXFLUSH);
+
+      // write the new value
+      putreg32(retReg, priv0->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+      // shutdown the LPUART1 (soft reset)
+      s32k1xx_shutdown(&g_uart0port);
+
+      // change the clock config for the new mode
+      s32k1xx_periphclocks(count, &clockConfig0);
+
+      // shutdown the LPUART1 (soft reset)
+      s32k1xx_shutdown(&g_uart0port);
+
+      // set up the LPUART1 again for the new mode
+      s32k1xx_setup(&g_uart0port);
+
+      // enable the interrupts
+      s32k1xx_rxint(&g_uart0port, true);
+      s32k1xx_txint(&g_uart0port, true);
+      
+    #endif
+    #ifdef CONFIG_PM_SERIAL1
+
+      // make the peripheral clock config struct
+      const struct peripheral_clock_config_s clockConfig1 = 
+      {
+        .clkname  =   LPUART1_CLK,
+        .clkgate  =   true,
+        .clksrc   =   clockSource,
+        .frac     =   MULTIPLY_BY_ONE,
+        .divider  =   1,
+      };
+
+      // read the FIFO register
+      retReg = getreg32(priv1->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+      // make the value
+      retReg |= (LPUART_FIFO_RXFLUSH + LPUART_FIFO_TXFLUSH);
+
+      // write the new value
+      putreg32(retReg, priv1->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+      // shutdown the LPUART1 (soft reset)
+      s32k1xx_shutdown(&g_uart1port);
+
+      // change the clock config for the new mode
+      s32k1xx_periphclocks(count, &clockConfig1);
+
+      // shutdown the LPUART1 (soft reset)
+      s32k1xx_shutdown(&g_uart1port);
+
+      // set up the LPUART1 again for the new mode
+      s32k1xx_setup(&g_uart1port);
+
+      // enable the interrupts
+      s32k1xx_rxint(&g_uart1port, true);
+      s32k1xx_txint(&g_uart1port, true);
+
+    #endif
+    #ifdef CONFIG_PM_SERIAL2
+
+      // make the peripheral clock config struct
+      const struct peripheral_clock_config_s clockConfig2 = 
+      {
+        .clkname  =   LPUART2_CLK,
+        .clkgate  =   true,
+        .clksrc   =   clockSource,
+        .frac     =   MULTIPLY_BY_ONE,
+        .divider  =   1,
+      };
+
+      // read the FIFO register
+      retReg = getreg32(priv2->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+      // make the value
+      retReg |= (LPUART_FIFO_RXFLUSH + LPUART_FIFO_TXFLUSH);
+
+      // write the new value
+      putreg32(retReg, priv2->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+      // shutdown the LPUART1 (soft reset)
+      s32k1xx_shutdown(&g_uart2port);
+
+      // change the clock config for the new mode
+      s32k1xx_periphclocks(count, &clockConfig2);
+
+      // shutdown the LPUART1 (soft reset)
+      s32k1xx_shutdown(&g_uart2port);
+
+      // set up the LPUART1 again for the new mode
+      s32k1xx_setup(&g_uart2port);
+
+      // enable the interrupts
+      s32k1xx_rxint(&g_uart2port, true);
+      s32k1xx_txint(&g_uart2port, true);
+      
+    #endif
+  }
 }
 #endif
 
@@ -1202,6 +1376,173 @@ static int up_pm_prepare(struct pm_callback_s *cb, int domain,
 {
   /* Logic to prepare for a reduced power state goes here. */
 
+  unsigned int count = 1;   // the amount of peripheral clocks to change
+  peripheral_clock_source_t clockSource;
+
+  #ifdef CONFIG_PM_SERIAL0
+    struct s32k1xx_uart_s *priv0 = (struct s32k1xx_uart_s *)g_uart0port.priv;
+  #endif
+  #ifdef CONFIG_PM_SERIAL1
+    struct s32k1xx_uart_s *priv1 = (struct s32k1xx_uart_s *)g_uart1port.priv;
+  #endif
+  #ifdef CONFIG_PM_SERIAL2
+    struct s32k1xx_uart_s *priv2 = (struct s32k1xx_uart_s *)g_uart2port.priv;
+  #endif
+
+  uint32_t retReg = 0;
+
+  // check if the transition to the mode is already done
+  if(pm_querystate(PM_IDLE_DOMAIN) == pmstate )
+  {
+    // return
+    return OK;
+  }
+
+  // check which PM it is 
+  switch(pmstate)
+  {
+    // in case it needs to prepare for VLPR mode
+    case PM_STANDBY:
+    {
+      /* Logic for PM_STANDBY goes here */
+
+      // set the right clock source
+      clockSource = CLK_SRC_SIRC_DIV2;
+    }
+    break;
+    // in case it needs to prepare for sleep mode
+    case PM_SLEEP:
+    {
+      /* Logic for PM_SLEEP goes here */
+
+      // set the right clock source
+      clockSource = CLK_SRC_SIRC_DIV2;
+    }
+    break;
+    default:
+    {
+      // don't do anything, just return OK
+      return OK;
+    }
+    break;
+  }
+
+  #ifdef CONFIG_PM_SERIAL0
+
+    // make the peripheral clock config struct
+    const struct peripheral_clock_config_s clockConfig0 = 
+    {
+      .clkname  =   LPUART0_CLK,
+      .clkgate  =   true,
+      .clksrc   =   clockSource,
+      .frac     =   MULTIPLY_BY_ONE,
+      .divider  =   1,
+    };
+
+    // read the FIFO register
+    retReg = getreg32(priv0->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+    // make the value
+    retReg |= (LPUART_FIFO_RXFLUSH + LPUART_FIFO_TXFLUSH);
+
+    // write the new value
+    putreg32(retReg, priv0->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+    // shutdown the LPUART1 (soft reset)
+    s32k1xx_shutdown(&g_uart0port);
+
+    // change the clock config for the new mode
+    s32k1xx_periphclocks(count, &clockConfig0);
+
+    // shutdown the LPUART1 (soft reset)
+    s32k1xx_shutdown(&g_uart0port);
+
+    // set up the LPUART1 again for the new mode
+    s32k1xx_setup(&g_uart0port);
+
+    // enable the interrupts
+    s32k1xx_rxint(&g_uart0port, true);
+    s32k1xx_txint(&g_uart0port, true);
+
+  #endif
+  #ifdef CONFIG_PM_SERIAL1
+
+    // make the peripheral clock config struct
+    const struct peripheral_clock_config_s clockConfig1 = 
+    {
+      .clkname  =   LPUART1_CLK,
+      .clkgate  =   true,
+      .clksrc   =   clockSource,
+      .frac     =   MULTIPLY_BY_ONE,
+      .divider  =   1,
+    };
+
+    // read the FIFO register
+    retReg = getreg32(priv1->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+    // make the value
+    retReg |= (LPUART_FIFO_RXFLUSH + LPUART_FIFO_TXFLUSH);
+
+    // write the new value
+    putreg32(retReg, priv1->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+    // shutdown the LPUART1 (soft reset)
+    s32k1xx_shutdown(&g_uart1port);
+
+    // change the clock config for the new mode
+    s32k1xx_periphclocks(count, &clockConfig1);
+
+    // shutdown the LPUART1 (soft reset)
+    s32k1xx_shutdown(&g_uart1port);
+
+    // set up the LPUART1 again for the new mode
+    s32k1xx_setup(&g_uart1port);
+
+    // enable the interrupts
+    s32k1xx_rxint(&g_uart1port, true);
+    s32k1xx_txint(&g_uart1port, true);
+    
+  #endif
+  #ifdef CONFIG_PM_SERIAL2
+
+    // make the peripheral clock config struct
+    const struct peripheral_clock_config_s clockConfig2 = 
+    {
+      .clkname  =   LPUART2_CLK,
+      .clkgate  =   true,
+      .clksrc   =   clockSource,
+      .frac     =   MULTIPLY_BY_ONE,
+      .divider  =   1,
+    };
+
+    // read the FIFO register
+    retReg = getreg32(priv2->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+    // make the value
+    retReg |= (LPUART_FIFO_RXFLUSH + LPUART_FIFO_TXFLUSH);
+
+    // write the new value
+    putreg32(retReg, priv2->uartbase + S32K1XX_LPUART_FIFO_OFFSET);
+
+    // shutdown the LPUART1 (soft reset)
+    s32k1xx_shutdown(&g_uart2port);
+
+    // change the clock config for the new mode
+    s32k1xx_periphclocks(count, &clockConfig2);
+
+    // shutdown the LPUART1 (soft reset)
+    s32k1xx_shutdown(&g_uart2port);
+
+    // set up the LPUART1 again for the new mode
+    s32k1xx_setup(&g_uart2port);
+
+    // enable the interrupts
+    s32k1xx_rxint(&g_uart2port, true);
+    s32k1xx_txint(&g_uart2port, true);
+    
+  #endif
+
+  // return
   return OK;
 }
 #endif
@@ -1249,13 +1590,16 @@ void s32k1xx_earlyserialinit(void)
 void arm_serialinit(void)
 {
 #ifdef CONFIG_PM
-  int ret;
+  #if defined(CONFIG_PM_SERIAL_STANDBY) || defined(CONFIG_PM_SERIAL_SLEEP) 
+ 
+    int ret;
 
-  /* Register to receive power management callbacks */
+    /* Register to receive power management callbacks */
 
-  ret = pm_register(&g_serial_pmcb);
-  DEBUGASSERT(ret == OK);
-  UNUSED(ret);
+    ret = pm_register(&g_serial_pmcb);
+    DEBUGASSERT(ret == OK);
+    UNUSED(ret);
+  #endif
 #endif
 
 #ifdef CONSOLE_DEV

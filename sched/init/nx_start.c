@@ -76,6 +76,8 @@
 #include "group/group.h"
 #include "init/init.h"
 
+#include "systemview/SEGGER_SYSVIEW_NuttX.h"
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -802,6 +804,8 @@ void nx_start(void)
   DEBUGVERIFY(nx_smp_start());
 
 #endif /* CONFIG_SMP */
+
+  TRACE_INIT();
 
   /* Bring Up the System ****************************************************/
 

@@ -87,8 +87,10 @@
 
 /* SMC Power Mode Protection register */
 
-#define SMC_PMPROT_AVLP             (1 << 5)  /* Bit 5:  Allow Very-Low-Power Modes */
-#define SMC_PMPROT_AHSRUN           (1 << 7)  /* Bit 7:  Allow High Speed Run mode */
+#define SMC_PMPROT_AVLP_SHIFT       (5)  /* Bit 5:  Allow Very-Low-Power Modes */
+#define SMC_PMPROT_AVLP             (1 << SMC_PMPROT_AVLP_SHIFT)  
+#define SMC_PMPROT_AHSRUN_SHIFT 	(7)  /* Bit 7:  Allow High Speed Run mode */
+#define SMC_PMPROT_AHSRUN           (1 << SMC_PMPROT_AHSRUN_SHIFT)  
 
 /* SMC Power Mode Control register */
 

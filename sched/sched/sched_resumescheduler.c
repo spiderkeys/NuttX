@@ -48,6 +48,8 @@
 #include "irq/irq.h"
 #include "sched/sched.h"
 
+#include "systemview/SEGGER_SYSVIEW_NuttX.h"
+
 #if CONFIG_RR_INTERVAL > 0 || defined(CONFIG_SCHED_RESUMESCHEDULER)
 
 /****************************************************************************

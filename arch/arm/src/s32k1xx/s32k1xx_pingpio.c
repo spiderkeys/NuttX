@@ -111,7 +111,6 @@ bool s32k1xx_gpioread(uint32_t pinset)
   bool         ret = false;
 
   DEBUGASSERT((pinset & _PIN_MODE_MASK) == _PIN_MODE_GPIO);
-  DEBUGASSERT((pinset & _PIN_IO_MASK) == _PIN_INPUT);
 
   /* Get the port number and pin number */
 
@@ -127,8 +126,17 @@ bool s32k1xx_gpioread(uint32_t pinset)
 
       /* return the state of the pin */
 
+      //if ((pinset & _PIN_IO_MASK) == _PIN_INPUT)
+      //  {
       regval = getreg32(base + S32K1XX_GPIO_PDIR_OFFSET);
+      //  }
+      // else if ((pinset & _PIN_IO_MASK) == _PIN_OUTPUT)
+      //   {
+      //     regval = getreg32(base + S32K1XX_GPIO_PDOR_OFFSET);
+      //   }
+
       ret    = ((regval & (1 << pin)) != 0);
     }
+
   return ret;
 }

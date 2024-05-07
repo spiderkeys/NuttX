@@ -55,6 +55,8 @@
 #include "task/task.h"
 #include "pthread/pthread.h"
 
+#include "systemview/SEGGER_SYSVIEW_NuttX.h"
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -135,6 +137,8 @@ void pthread_exit(FAR void *exit_value)
    */
 
   nxtask_exithook(tcb, EXIT_SUCCESS, false);
+
+  TRACE_TASK_TERMINATE(tcb->pid);
 
   /* Then just exit, retaining all file descriptors and without
    * calling atexit() functions.

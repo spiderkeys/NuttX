@@ -1,0 +1,66 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+menuconfig SYSTEMVIEW_ENABLE
+	bool "Enable SystemView Instrumentation"
+	default n
+    ---help---
+        Enable instrumentation of the scheduler using SEGGER SystemView.
+
+if SYSTEMVIEW_ENABLE
+config SYSTEMVIEW_APP_NAME
+    string "Application Name"
+    default "NuttX start project"
+config SYSTEMVIEW_DEVICE_NAME
+    string "Device Name"
+    default "Cortex-M3/M4/M7"
+config SYSTEMVIEW_CPU_FREQ
+    int "CPU Frequency [Hz]"
+    default 168000000
+config SYSTEMVIEW_TIMESTAMP_FREQ
+    int "Timestamp Frequency [Hz]"
+    default 168000000
+config SYSTEMVIEW_RES_ID_BASE
+    hex "Resource ID Base"
+    default 0x00000000
+config SYSTEMVIEW_RES_ID_SHIFT
+    int "Resource ID Shift"
+    default 0
+config SYSTEMVIEW_START_ON_INIT
+    bool "Start Recording on Init"
+    default n
+config SYSTEMVIEW_SYSDESC_0
+    string "System Description 0"
+    default "I#11=SVC,I#15=SysTick"
+config SYSTEMVIEW_SYSDESC_1
+    string "System Description 1"
+config SYSTEMVIEW_SYSDESC_2
+    string "System Description 2"
+config SYSTEMVIEW_RECORD_API
+    bool "Record APIs"
+    default y
+config SYSTEMVIEW_RECORD_ISR
+    bool "Record Interrupts"
+    default y
+config SYSTEMVIEW_BUFFER_SIZE
+    int "SystemView Buffer Size"
+    default 8192
+config SYSTEMVIEW_RTT_CHANNEL
+    int "SystemView RTT Channel"
+    default 1
+config SYSTEMVIEW_USE_STATIC_BUFFER
+    bool "Use static event buffer"
+    default y
+config SYSTEMVIEW_POST_MORTEM_MODE
+    bool "Enable Post-Mortem Mode"
+    default n
+config SYSTEMVIEW_MAX_NOF_TASKS
+    int "Maximum Number of Tasks"
+    default 16
+    ---help---
+        Maximum number of Tasks to be recorded by Systemview.
+        If more tasks are created, their information is not added to the list, i.e. not recorded.
+        
+endif # SYSTEMVIEW_ENABLE

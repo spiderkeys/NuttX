@@ -47,6 +47,8 @@
 #include "irq/irq.h"
 #include "sched/sched.h"
 
+#include "systemview/SEGGER_SYSVIEW_NuttX.h"
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -84,6 +86,8 @@ bool nxsched_add_readytorun(FAR struct tcb_s *btcb)
 {
   FAR struct tcb_s *rtcb = this_task();
   bool ret;
+
+  TRACE_TASK_READY(btcb->pid);
 
   /* Check if pre-emption is disabled for the current running task and if
    * the new ready-to-run task would cause the current running task to be

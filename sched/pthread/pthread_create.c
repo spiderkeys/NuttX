@@ -45,6 +45,8 @@
 #include "clock/clock.h"
 #include "pthread/pthread.h"
 
+#include "systemview/SEGGER_SYSVIEW_NuttX.h"
+
 /****************************************************************************
  * Public Data
  ****************************************************************************/
@@ -234,6 +236,8 @@ int pthread_create(FAR pthread_t *thread, FAR const pthread_attr_t *attr,
   pid_t pid;
   int ret;
   bool group_joined = false;
+
+  TRACE_API_PTHREAD_CREATE(thread, attr, start_routine, arg);
 
   /* If attributes were not supplied, use the default attributes */
 
@@ -592,6 +596,10 @@ int pthread_create(FAR pthread_t *thread, FAR const pthread_attr_t *attr,
       goto errout_with_join;
     }
 
+  TRACE_TASK_CREATED(pid, ptcb->cmn.name, ptcb->cmn.base_priority, ptcb->cmn.adj_stack_ptr, ptcb->cmn.adj_stack_size);
+
+  TRACE_API_PTHREAD_CREATE_RETURN(ret);
+
   return ret;
 
 errout_with_join:
@@ -608,5 +616,8 @@ errout_with_tcb:
     }
 
   nxsched_release_tcb((FAR struct tcb_s *)ptcb, TCB_FLAG_TTYPE_PTHREAD);
+
+  TRACE_API_PTHREAD_CREATE_RETURN(errcode);
+
   return errcode;
 }

@@ -52,6 +52,8 @@
 #include "signal/signal.h"
 #include "task/task.h"
 
+#include "systemview/SEGGER_SYSVIEW_NuttX.h"
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -134,6 +136,8 @@ void nxtask_start(void)
    * we have to switch to user-mode before calling the task.
    */
 
+  TRACE_TASK_START(tcb->cmn.pid);
+
 #ifndef CONFIG_BUILD_FLAT
   if ((tcb->cmn.flags & TCB_FLAG_TTYPE_MASK) != TCB_FLAG_TTYPE_KERNEL)
     {
@@ -146,6 +150,8 @@ void nxtask_start(void)
 #else
   nxtask_startup(tcb->cmn.entry.main, argc, tcb->argv);
 #endif
+
+  TRACE_TASK_TERMINATE(tcb->cmn.pid);
 
   /* Call exit() if/when the task returns */
 

@@ -137,7 +137,7 @@ uint16_t can_callback(FAR struct net_driver_s *dev,
 
       /* Try to lock the network when successfull send data to the listener */
 
-      if (net_trylock() == OK)
+      if (up_interrupt_context() == false && net_trylock() == OK)
         {
           flags = devif_conn_event(dev, conn, flags, conn->list);
           net_unlock();
@@ -234,7 +234,9 @@ uint16_t can_datahandler(FAR struct can_conn_s *conn, FAR uint8_t *buffer,
    * available.
    */
 
-  can_readahead_signal(conn);
+  if(up_interrupt_context() == false) {
+      can_readahead_signal(conn);
+  }
 #endif
   return buflen;
 }

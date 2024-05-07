@@ -38,6 +38,8 @@
 #include "group/group.h"
 #include "task/task.h"
 
+#include "systemview/SEGGER_SYSVIEW_NuttX.h"
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/

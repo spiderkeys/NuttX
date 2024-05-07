@@ -247,9 +247,7 @@ int net_lock(void)
 
 int net_trylock(void)
 {
-#ifdef CONFIG_SMP
   irqstate_t flags = enter_critical_section();
-#endif
   pid_t me = getpid();
   int ret = OK;
 
@@ -263,7 +261,23 @@ int net_trylock(void)
     }
   else
     {
-      ret = nxsem_trywait(&g_netlock);
+      if (g_netlock.semcount > 0)
+        {
+          /* Take a semaphore count.  Note that we cannot do this in
+           * in the orthodox way by calling nxsem_wait() or nxsem_trywait()
+           * because this function may be called from an interrupt
+           * handler. Fortunately we know that semephore is free thus we take it.
+           */
+
+          g_netlock.semcount--;
+          ret = OK;
+        }
+      else
+        {
+          /* Semaphore is not available */
+          ret = -EAGAIN;
+        }
+
       if (ret >= 0)
         {
           /* Now this thread holds the semaphore */
@@ -273,9 +287,7 @@ int net_trylock(void)
         }
     }
 
-#ifdef CONFIG_SMP
   leave_critical_section(flags);
-#endif
   return ret;
 }
 
